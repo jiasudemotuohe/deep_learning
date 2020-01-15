@@ -14,12 +14,15 @@ def main():
 
 
 def generate_data():
-    num_samples = 10
+    theta_1 = 10
+    bias_1 = 5
+
+    num_samples = 100
     x_list = []
     y_list = []
     for i in range(num_samples):
         x = random.randint(1, 10)
-        y = x * 10 + 5 + random.random() * random.randint(-1, 1)
+        y = x * theta_1 + bias_1 + random.random() * random.randint(-1, 1)
 
         x_list.append(x)
         y_list.append(y)
@@ -27,30 +30,32 @@ def generate_data():
 
 
 def train(x, y):
+    max_step = 1000
+    learning_rate = 0.01
     w = [random.random()]
     b = [random.random()]
-    learning_rate = 0.01
-    max_step = 1000
 
     for i in range(max_step):
-        y_pred = inference(w, b, x)
+        y_pred = inference(x, w, b)
+
         dw, db = gradient(y, y_pred, x, b)
 
-        w = w - learning_rate * dw
-        b = b - learning_rate * db
+        w -= learning_rate * dw
+        b -= learning_rate * db
 
         loss = (y - y_pred) ** 2
         loss = loss.reshape((-1, 1))
 
         print("i=%s,  loss=%s" % (i, np.sum(loss)))
+    print("the final theta and bais is %s   %s  " % (w, b))
 
 
-def inference(w, bias, x):
+def inference(x, w, bias):
     return np.dot(x, w) + bias
 
 
 def gradient(y_true, y_pred, x, b):
-    loss = (y_true - y_pred)
+    loss = (y_pred - y_true)
     loss = np.reshape(np.array(loss), (-1, 1))
 
     dw = loss * x
