@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Time    : 2020-01-13 21:44
 # @Author  : AnYongYi
-'''linear regression demo'''
+
+''' linear regression demo '''
 
 import random
 import numpy as np
@@ -43,11 +44,10 @@ def train(x, y):
         w -= learning_rate * dw
         b -= learning_rate * db
 
-        loss = (y - y_pred) ** 2
-        loss = loss.reshape((-1, 1))
+        loss = ((y - y_pred) ** 2).reshape((-1, 1))
 
-        print("i=%s,  loss=%s" % (i, np.sum(loss)))
-    print("the final theta and bais is %s   %s  " % (w, b))
+        # print("i=%s,  loss=%s" % (i, np.sum(loss)))
+    print("train finish the final theta and bais is %s   %s  " % (w, b))
 
 
 def inference(x, w, bias):
