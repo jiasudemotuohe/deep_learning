@@ -12,7 +12,8 @@ import math
     30:20:1
 '''
 
-MINIMUN_NUMBER = 0
+MINIMUN_NUMBER = 0.0
+LOG = True
 
 
 class BPNNeuralClassification:
@@ -21,7 +22,7 @@ class BPNNeuralClassification:
         self.bias = [np.random.randn(n, 1) for n in sizes[1:]]  # bias
         self.weights = [np.random.randn(c, r) for c, r in zip(sizes[1:], sizes[:-1])]  # weight
 
-    def train(self, x_batch, y_batch, learning_rate=0.01, max_step=1000):
+    def train(self, x_batch, y_batch, learning_rate=0.01, max_step=100):
         self.n_samples = len(x_batch)
         self.learning_rate = learning_rate
 
@@ -41,7 +42,8 @@ class BPNNeuralClassification:
             self.weights = [w - dw/self.n_samples * learning_rate for w, dw in zip(self.weights, delta_w_batch)]
             self.bias = [b - db/self.n_samples * learning_rate for b, db in zip(self.bias, delta_b_batch)]
 
-            print("loss=%s" % loss_sum)
+            if LOG:
+                print("loss=%s" % loss_sum)
 
     def back_propagation(self, a, y):
         a = a.reshape((-1, 1))
@@ -53,19 +55,20 @@ class BPNNeuralClassification:
             z = np.dot(w, a) + b
             a = self.sigmoid(z)
 
-            activations.append(a)
             zs.append(z)
+            activations.append(a)
 
-        # back propagation, to calculate the loss function,
+        # back propagation, to calculate the loss function, and use the loss to calculate the delta_w, delta_b
 
         delta_w = [np.zeros(w.shape) for w in self.weights]
         delta_b = [np.zeros(b.shape) for b in self.bias]
 
-        loss = self.loss(y, activations[len(activations) - 1])
+        loss = self.loss(y, activations[-1])
 
         for i in range(1, self.num_layers):  # -1, -2
 
-            if i == 1:
+            if i == 1:  # back_calculate the delta_w, delta_b, i==1 calculate the last layer's delta
+
                 delta_b[-i] = loss * self.sigmoid_derivative(zs[-i])
                 delta_w[-i] = np.dot(delta_b[-i], activations[-i-1].T)
 
@@ -82,8 +85,8 @@ class BPNNeuralClassification:
         return -(y * (1 / y_pred) + (1 - y) * (1 / (1-y_pred)))
 
     def loss(self, y, y_pred):
-        loss = - (y * np.log(y_pred + MINIMUN_NUMBER) + (1-y) * np.log(1-y_pred + MINIMUN_NUMBER))
-        return loss
+        loss = y * np.log(y_pred + MINIMUN_NUMBER) + (1-y) * np.log(1-y_pred + MINIMUN_NUMBER)
+        return -loss
 
     def sigmoid(self, z):
         return 1/(1 + np.exp(-z))
@@ -102,7 +105,7 @@ class BPNNeuralClassification:
 def run():
     x, target, feature_names, target_names = BreastLoader.load_cancer_data()
 
-    size = [30, 10, 1]
+    size = [30, 1]
     model = BPNNeuralClassification(size)
     model.train(x, target)
 
