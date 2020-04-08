@@ -12,7 +12,7 @@ import math
     30:20:1
 '''
 
-MINIMUN_NUMBER = 0.0
+MINIMUN_NUMBER = 0.0000001
 LOG = True
 
 
@@ -22,7 +22,7 @@ class BPNNeuralClassification:
         self.bias = [np.random.randn(n, 1) for n in sizes[1:]]  # bias
         self.weights = [np.random.randn(c, r) for c, r in zip(sizes[1:], sizes[:-1])]  # weight
 
-    def train(self, x_batch, y_batch, learning_rate=0.01, max_step=100):
+    def train(self, x_batch, y_batch, learning_rate=0.01, max_step=1000):
         self.n_samples = len(x_batch)
         self.learning_rate = learning_rate
 
@@ -64,12 +64,13 @@ class BPNNeuralClassification:
         delta_b = [np.zeros(b.shape) for b in self.bias]
 
         loss = self.loss(y, activations[-1])
+        loss_delta = self.loss_equation_derivative(y, activations[-1])
 
         for i in range(1, self.num_layers):  # -1, -2
 
             if i == 1:  # back_calculate the delta_w, delta_b, i==1 calculate the last layer's delta
 
-                delta_b[-i] = loss * self.sigmoid_derivative(zs[-i])
+                delta_b[-i] = loss_delta * self.sigmoid_derivative(zs[-i])
                 delta_w[-i] = np.dot(delta_b[-i], activations[-i-1].T)
 
             else:
@@ -81,8 +82,9 @@ class BPNNeuralClassification:
     def sigmoid_derivative(self, z):
         return self.sigmoid(z) * (1 - self.sigmoid(z))
 
-    def loss_dirivative(self, y, y_pred):
-        return -(y * (1 / y_pred) + (1 - y) * (1 / (1-y_pred)))
+    def loss_equation_derivative(self, y, y_pred):
+        return -(y / y_pred + (y - 1) / (1-y_pred))
+        # return y * (1 / y_pred) + (1 - y) * (1 / (1-y_pred))
 
     def loss(self, y, y_pred):
         loss = y * np.log(y_pred + MINIMUN_NUMBER) + (1-y) * np.log(1-y_pred + MINIMUN_NUMBER)
@@ -105,7 +107,7 @@ class BPNNeuralClassification:
 def run():
     x, target, feature_names, target_names = BreastLoader.load_cancer_data()
 
-    size = [30, 1]
+    size = [30, 10, 1]
     model = BPNNeuralClassification(size)
     model.train(x, target)
 
