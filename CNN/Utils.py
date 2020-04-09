@@ -17,7 +17,7 @@ def flip_180(W):
     return [np.dot(e_1, w).dot(e_1) for w in W]
 
 
-def load_data_set():
+def load_data_set(one_hot=True):
 
     train = h5py.File("datasets/train_signs.h5")
     test = h5py.File("datasets/test_signs.h5")
@@ -31,8 +31,15 @@ def load_data_set():
         pyplot.imshow(train_x[0])
         pyplot.show()
 
-    # return train_x, train_y, test_x, test_y
-    return train_x[0:10], train_y[0:10], test_x, test_y
+    train_x = train_x[:10]
+    train_y = train_y[:10]
+
+    if one_hot:
+        classes = train["list_classes"].shape[0]
+        train_y = np.identity(classes, dtype=int)[train_y]
+        test_y = np.identity(classes, dtype=int)[test_y]
+
+    return train_x, train_y, test_x, test_y
 
 
 if __name__ == "__main__":

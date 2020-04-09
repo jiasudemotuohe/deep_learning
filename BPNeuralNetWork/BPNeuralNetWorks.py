@@ -13,7 +13,6 @@ import math
 '''
 
 MINIMUN_NUMBER = 0.0000001
-LOG = True
 
 
 class BPNNeuralClassification:
@@ -22,7 +21,7 @@ class BPNNeuralClassification:
         self.bias = [np.random.randn(n, 1) for n in sizes[1:]]  # bias
         self.weights = [np.random.randn(c, r) for c, r in zip(sizes[1:], sizes[:-1])]  # weight
 
-    def train(self, x_batch, y_batch, learning_rate=0.01, max_step=1000):
+    def train(self, x_batch, y_batch, learning_rate=0.5, max_step=5000):
         self.n_samples = len(x_batch)
         self.learning_rate = learning_rate
 
@@ -42,8 +41,8 @@ class BPNNeuralClassification:
             self.weights = [w - dw/self.n_samples * learning_rate for w, dw in zip(self.weights, delta_w_batch)]
             self.bias = [b - db/self.n_samples * learning_rate for b, db in zip(self.bias, delta_b_batch)]
 
-            if LOG:
-                print("loss=%s" % loss_sum)
+            if i % 500 == 0:
+                print("this is %s epoch loss is %s" % (i, loss_sum))
 
     def back_propagation(self, a, y):
         a = a.reshape((-1, 1))

@@ -104,22 +104,21 @@ def pool_forward(z, hyper_parameter, mode="max"):
     return a
 
 
-
 def init_variable():
     w1 = np.random.randn(10, 3, 3, 3)
     b1 = np.random.randn(10, 1, 1, 1)
 
-    w2 = np.random.randn(5, 10240)
-    b2 = np.random.randn(5, 1)
+    w2 = np.random.randn(6, 10240)
+    b2 = np.random.randn(6, 1)
 
     return [w1, w2], [b1, b2]
 
 
 def conv_backforward(cache):
-    (z, a_prev_paded, W, B, hyperparameter) = cache
+    (z, a_prev_paded, W, B, hyper_parameter) = cache
 
-    stride = hyperparameter["stride"]
-    pad = hyperparameter['pad']
+    stride = hyper_parameter["stride"]
+    pad = hyper_parameter['pad']
 
     n_z, h_z, w_z, c_z = z.shape
     n_a, h_a, w_a, c_a = a_prev_paded.shape
@@ -205,30 +204,36 @@ def soft_max(z):
     return [item / np.sum(item) for item in z]
 
 
-def derivative_soft_max(z):
-    [j*2 for j in i for i in z]
+def soft_max_loss_derivative(y_pred, y):
+    # when
+    loss_derivative = y_pred - y
+
+    return loss_derivative
+
+
+def back_propagation(y_pred, train_y, z2):
+
+    delta_z2 = soft_max_loss_derivative(y_pred, train_y)
+    dw3 = [np.dot(delta_item.T, z2.item) for delta_item, z2_item in zip(delta_z2, z2.T)]
+    print(dw3.shape)
 
 
 def main():
-    train_x, train_y, test_x, test_y = Utils.load_data_set()
+    train_x, train_y, test_x, test_y = Utils.load_data_set(one_hot=True)
     ws, bs = init_variable()
 
     z1 = conv_forward(train_x, ws[0], bs[0], hyper_parameter={"stride": 1, "pad": 1})
     a1 = pool_forward(z1, hyper_parameter={"filter_size": 2, "stride": 2}, mode="max")
     #
     z2 = fully_connection_nn(a1, ws[1], bs[1])
-
-    # z2_activated = relu_activation_function(z2) # here don't need to use the activation function
-
     y_pred = soft_max(z2.T)
-    loss = cross_entropy_loss(y_pred, train_y)
 
-    derivative_soft_max(z2.T)
+    back_propagation(y_pred, train_y, z2)
+    loss = cross_entropy_loss(y_pred, train_y)
 
     # pool_backforward(delta_a, cache_pool)
     # delta_a, dw, db = conv_backforward(dz, cache)
-    print(z2.shape, z2.T)
-    print(loss)
+    # print(z2.shape, z2.T)
 
 
 
