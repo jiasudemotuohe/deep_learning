@@ -8,6 +8,7 @@ from matplotlib import pyplot
 
 DEBUGE = False
 
+
 def flip_180(W):
     m, n_h, n_w, n_c = W.shape
 
