@@ -204,7 +204,7 @@ def cross_entropy_loss(y_pred, y):
 
 
 def soft_max(z):
-    z = z / 1000
+    z = z - np.max(z)
     return np.array([np.exp(item) / np.sum(np.exp(item)) for item in z])
 
 
