@@ -8,7 +8,7 @@ import Utils
 import h5py
 import time
 
-MINIMUN_NUMBER = 0.0000001
+MINIMUN_NUMBER = 0.000001
 
 
 def zero_pad(x, pad):
@@ -111,46 +111,49 @@ def init_variable():
     w2 = np.random.randn(6, 10240)
     b2 = np.random.randn(6, 1)
 
-    return [w1, w2], [b1, b2]
+    hyper_parameter1 = {"stride": 1, "pad": 1}
+    hyper_parameter2 = {"stride": 2, "pad": 0, "filter_size": 2}
+
+    return [w1, w2], [b1, b2], [hyper_parameter1, hyper_parameter2]
 
 
-def conv_backforward(cache):
-    (z, a_prev_paded, W, B, hyper_parameter) = cache
-
-    stride = hyper_parameter["stride"]
-    pad = hyper_parameter['pad']
-
-    n_z, h_z, w_z, c_z = z.shape
-    n_a, h_a, w_a, c_a = a_prev_paded.shape
-    n_f, h_f, w_f, c_f = W.shape
-
-    pad_back = int(((h_a - 1) * stride + h_f - h_z) / 2)
-    z_paded = zero_pad(z, pad_back)
-
-    W_fliped = Utils.flip_180(W)
-    delta_a = np.zeros(a_prev_paded.shape)
-
-    for i in range(n_z):
-
-        vertical_start, vertical_end = 0, h_f
-        for j in range(h_a):
-
-            horizontal_start, horizontal_end = 0, w_f
-            for k in range(w_a):
-
-                for c in range(n_f):
-
-                    z_slice = z_paded[i][vertical_start: vertical_end, horizontal_start: horizontal_end, c:c+1]
-                    delta_a[i][j][k] += np.sum(z_slice * W_fliped[c], axis=(0, 1))
-
-                horizontal_start += 1
-                horizontal_end += 1
-
-            vertical_start += 1
-            vertical_end += 1
-
-    # we calculate the delta a finally, but it's the padded data, so we need to cut out the original data,
-    return delta_a[:, pad: -pad, pad: -pad, :]
+# def conv_backforward(cache, delta_z, W, hyper_parameter):
+#     (z, a_prev_paded, W, B, hyper_parameter) = cache
+#
+#     stride = hyper_parameter["stride"]
+#     pad = hyper_parameter['pad']
+#
+#     n_z, h_z, w_z, c_z = z.shape
+#     n_a, h_a, w_a, c_a = a_prev_paded.shape
+#     n_f, h_f, w_f, c_f = W.shape
+#
+#     pad_back = int(((h_a - 1) * stride + h_f - h_z) / 2)
+#     z_paded = zero_pad(z, pad_back)
+#
+#     W_fliped = Utils.flip_180(W)
+#     delta_a = np.zeros(a_prev_paded.shape)
+#
+#     for i in range(n_z):
+#
+#         vertical_start, vertical_end = 0, h_f
+#         for j in range(h_a):
+#
+#             horizontal_start, horizontal_end = 0, w_f
+#             for k in range(w_a):
+#
+#                 for c in range(n_f):
+#
+#                     z_slice = z_paded[i][vertical_start: vertical_end, horizontal_start: horizontal_end, c:c+1]
+#                     delta_a[i][j][k] += np.sum(z_slice * W_fliped[c], axis=(0, 1))
+#
+#                 horizontal_start += 1
+#                 horizontal_end += 1
+#
+#             vertical_start += 1
+#             vertical_end += 1
+#
+#     # we calculate the delta a finally, but it's the padded data, so we need to cut out the original data,
+#     return delta_a[:, pad: -pad, pad: -pad, :]
 
 
 def pool_backforward(delta, cache):
@@ -185,9 +188,9 @@ def fully_connection_nn(a, w, b):
     a = np.reshape(a, newshape=(n, -1))
 
     z = np.dot(w, a.T) + b
-    a = relu_activation_function(z)
+    # a = relu_activation_function(z)
 
-    return a
+    return z
 
 
 def relu_activation_function(z):
@@ -197,47 +200,122 @@ def relu_activation_function(z):
 
 def cross_entropy_loss(y_pred, y):
     loss = [-np.sum(y_true * np.log(y_p + MINIMUN_NUMBER))for y_p, y_true in zip(y_pred, y)]
-    return loss
+    return np.sum(loss)
 
 
 def soft_max(z):
-    return [item / np.sum(item) for item in z]
+    z = z / 1000
+    return np.array([np.exp(item) / np.sum(np.exp(item)) for item in z])
 
 
 def soft_max_loss_derivative(y_pred, y):
-    # when
-    loss_derivative = y_pred - y
-
-    return loss_derivative
+    return y_pred - y
 
 
-def back_propagation(y_pred, train_y, z2):
+def back_propagation(y_pred, train_y, ws, bs, activations, parameters):
+    """
+    delta_b1_batch: here delta_b1_batch is the derivative after the max_pooling, we need use this number to compute the
+                    previous derivative
 
-    delta_z2 = soft_max_loss_derivative(y_pred, train_y)
-    dw3 = [np.dot(delta_item.T, z2.item) for delta_item, z2_item in zip(delta_z2, z2.T)]
-    print(dw3.shape)
+    delta_w2_batch: this is the derivative of the full_connection layer
 
 
-def main():
+    """
+    m, classes = y_pred.shape
+
+    a1 = np.reshape(activations[-1], newshape=(m, -1))  # 10240 * 6
+    z1_repeats = np.repeat(activations[-1], repeats=2, axis=2).repeat(repeats=2, axis=1)
+    z1_mask = np.equal(activations[-2], z1_repeats)
+
+    delta_b2_batch = soft_max_loss_derivative(y_pred, train_y)
+    delta_w2_batch = []
+    delta_b1_batch = []
+    delta_w1_batch = []
+
+    for i in range(m):
+        dz2 = np.array(delta_b2_batch[i]).reshape(6, 1)
+        a1_item = np.array(a1[i]).reshape(1, -1)
+
+        delta_b1 = np.dot(ws[1].T, dz2).reshape(32, 32, 10)
+        delta_b1_reverse_max_pool = np.repeat(delta_b1, repeats=2, axis=0).repeat(repeats=2, axis=1)
+
+        delta_b1 = delta_b1_reverse_max_pool * z1_mask[i]
+        delta_w1 = signal_conv_back_forward(activations[-3][i], delta_b1, ws[0], parameters[0])
+
+        delta_w2_batch.append(np.dot(dz2, a1_item))
+
+        delta_b1 = np.sum(delta_b1, axis=(0, 1), keepdims=True)
+        delta_b1_batch.append(delta_b1)
+        delta_w1_batch.append(delta_w1)
+
+    dw2 = np.mean(delta_w2_batch, axis=0)
+    dw1 = np.mean(delta_w1_batch, axis=0)
+
+    db2 = np.mean(delta_b2_batch, axis=0)
+    db1 = np.mean(delta_b1_batch, axis=0)
+    return [dw1, dw2], [db1.reshape(bs[0].shape), db2.reshape(bs[1].shape)]
+
+    # w2_shape = np.array(delta_w2_batch).shape
+    # b1_shape = np.array(delta_b1_batch).shape
+    # w1_shape = np.array(delta_w1_batch).shape
+    # print(w2_shape, b1_shape, w1_shape)
+
+
+def signal_conv_back_forward(a_prev, delta_b, w, params):
+    stride = params['stride']
+
+    h_delta_b, w_delta_b, c_delta_b = delta_b.shape
+    n_kernel, h_kernel, w_kernel, c_kernel = w.shape
+
+    delta_w = np.zeros(w.shape)
+
+    for i in range(h_delta_b):
+        vertical_start, vertical_end = 0, h_kernel
+
+        for j in range(w_delta_b):
+            horizontal_start, horizontal_end = 0, w_kernel
+
+            a_slice = a_prev[vertical_start: vertical_end, horizontal_start: horizontal_end, :]
+
+            for k in range(n_kernel):
+                b = delta_b[i:i+1, j:j+1, k:k+1]
+
+                delta_w[k] += b * a_slice
+
+            horizontal_start += stride
+            horizontal_end += stride
+
+        vertical_start += stride
+        vertical_end += stride
+
+    return delta_w
+
+
+def train(learning_rate=0.01, max_step=5):
     train_x, train_y, test_x, test_y = Utils.load_data_set(one_hot=True)
-    ws, bs = init_variable()
 
-    z1 = conv_forward(train_x, ws[0], bs[0], hyper_parameter={"stride": 1, "pad": 1})
-    a1 = pool_forward(z1, hyper_parameter={"filter_size": 2, "stride": 2}, mode="max")
-    #
-    z2 = fully_connection_nn(a1, ws[1], bs[1])
-    y_pred = soft_max(z2.T)
+    ws, bs, hyper_parameters = init_variable()
 
-    back_propagation(y_pred, train_y, z2)
-    loss = cross_entropy_loss(y_pred, train_y)
+    for step in range(max_step):
 
-    # pool_backforward(delta_a, cache_pool)
-    # delta_a, dw, db = conv_backforward(dz, cache)
-    # print(z2.shape, z2.T)
+        z1 = conv_forward(train_x, ws[0], bs[0], hyper_parameters[0])
+        a1 = pool_forward(z1, hyper_parameters[1], mode="max")
+
+        a2 = fully_connection_nn(a1, ws[1], bs[1])
+        y_pred = soft_max(a2.T)
+
+        activations = [zero_pad(train_x, hyper_parameters[0]["pad"]), z1, a1]
+        dws, dbs = back_propagation(y_pred, train_y, ws, bs, activations, hyper_parameters)
+
+        ws = [w - learning_rate * dw for w, dw in zip(ws, dws)]
+        bs = [b - learning_rate * db for b, db in zip(bs, dbs)]
+
+        print("step=%s loss is %s " % (step, cross_entropy_loss(y_pred, train_y)))
+
 
 
 
 if __name__ == "__main__":
-    main()
+    train()
     print("cost time is %s" % time.clock())
 
