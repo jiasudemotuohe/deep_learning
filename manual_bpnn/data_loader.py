@@ -23,7 +23,4 @@ def load_cancer_data():
 
 
 if __name__ == "__main__":
-    x, y, f, t = load_cancer_data()
-    for i, j in zip(x, y):
-        print(i, j)
-        break
+    load_cancer_data()

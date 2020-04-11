@@ -3,9 +3,7 @@
 # @Author  : jia_su_de_mo_tuo_che
 
 import numpy as np
-import sys
-import Utils
-import h5py
+import utils
 import time
 
 MINIMUN_NUMBER = 0.000001
@@ -292,7 +290,7 @@ def signal_conv_back_forward(a_prev, delta_b, w, params):
 
 
 def train(learning_rate=0.01, max_step=5):
-    train_x, train_y, test_x, test_y = Utils.load_data_set(one_hot=True)
+    train_x, train_y, test_x, test_y = utils.load_data_set(one_hot=True)
 
     ws, bs, hyper_parameters = init_variable()
 
@@ -313,9 +311,6 @@ def train(learning_rate=0.01, max_step=5):
         print("step=%s loss is %s " % (step, cross_entropy_loss(y_pred, train_y)))
 
 
-
-
 if __name__ == "__main__":
     train()
     print("cost time is %s" % time.clock())
-

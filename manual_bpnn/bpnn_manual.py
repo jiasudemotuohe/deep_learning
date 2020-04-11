@@ -4,7 +4,7 @@
 
 import numpy as np
 import random
-import BreastLoader
+import data_loader
 import math
 
 
@@ -104,7 +104,7 @@ class BPNNeuralClassification:
 
 
 def run():
-    x, target, feature_names, target_names = BreastLoader.load_cancer_data()
+    x, target, feature_names, target_names = data_loader.load_cancer_data()
 
     size = [30, 10, 1]
     model = BPNNeuralClassification(size)
