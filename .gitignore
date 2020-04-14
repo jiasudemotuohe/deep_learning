@@ -2,3 +2,4 @@
 manual_cnn/test.py
 .DS_Store
 *.pyc
+*.v2

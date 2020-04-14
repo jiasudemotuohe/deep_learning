@@ -2,7 +2,6 @@
 # @Time    : 2020-04-13 16:56
 # @Author  : speeding_moto
 
-
 import data_utils
 from matplotlib import pyplot
 from tensorflow import keras
@@ -81,5 +80,5 @@ if __name__ == '__main__':
 
     sequential = keras.models.load_model('./weights/sequential')
     loss, acc = sequential.evaluate(test_images, test_labels)
-    print("loss=%s   acc=%s"% (loss, acc))
+    print("loss=%s   acc=%s" % (loss, acc))
 

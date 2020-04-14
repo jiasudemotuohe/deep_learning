@@ -19,23 +19,26 @@ def load_model(model):
 def train(train_x, train_y, test_x, test_y):
 
     model = keras.Sequential()
-    model.add(keras.layers.Dense(100, activation=tf.nn.relu, kernel_regularizer=tf.keras.regularizers.l1(0.01),
-                                 bias_regularizer=tf.keras.regularizers.l1(0.01)))
+    model.add(keras.layers.Dense(128, activation=tf.nn.relu, kernel_regularizer=tf.keras.regularizers.l1(0.01),
+                                 bias_regularizer=tf.keras.regularizers.l1(0.05)))
 
-    # model.add(keras.layers.Dense(64, activation=tf.nn.relu, kernel_regularizer=tf.keras.regularizers.l1(0.01),
-    #                              bias_regularizer=tf.keras.regularizers.l1(0.01)))
-    #
-    model.add(keras.layers.Dense(32, activation=tf.nn.relu, kernel_regularizer=tf.keras.regularizers.l1(0.01),
-                                 bias_regularizer=tf.keras.regularizers.l1(0.01)))
+    model.add(keras.layers.Dense(64, activation=tf.nn.relu, kernel_regularizer=tf.keras.regularizers.l1(0.01),
+                                 bias_regularizer=tf.keras.regularizers.l1(0.05)))
 
-    model.compile(optimizer=tf.keras.optimizers.Adam(0.01),
+    model.add(keras.layers.Dense(64, activation=tf.nn.relu, kernel_regularizer=tf.keras.regularizers.l1(0.01),
+                                 bias_regularizer=tf.keras.regularizers.l1(0.05)))
+
+    model.add(keras.layers.Dense(1, activation=tf.nn.relu, kernel_regularizer=tf.keras.regularizers.l1(0.01),
+                                 bias_regularizer=tf.keras.regularizers.l1(0.05)))
+
+    model.compile(optimizer=tf.keras.optimizers.Adam(0.1),
                   loss=tf.keras.losses.MSE,
                   metrics=['mae', 'mse'])
 
     call_backs = [tf.keras.callbacks.EarlyStopping(patience=3, monitor='val_loss'),
                   tf.keras.callbacks.TensorBoard(log_dir='./logs')]
 
-    model.fit(train_x, train_y, epochs=5000, batch_size=500, callbacks=call_backs,
+    model.fit(train_x, train_y, epochs=100000, callbacks=call_backs,
               validation_data=(test_x, test_y))
 
     return model

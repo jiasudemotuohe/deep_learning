@@ -25,7 +25,7 @@ def load_eunite_data():
 def load_eunite_train_data():
     X, Y = load_eunite_data()
 
-    trains_test_rate = int(len(X) * 0.5)
+    trains_test_rate = int(len(X) * 0.7)
 
     train_x = X[0: trains_test_rate]
     train_y = Y[0: trains_test_rate]
@@ -42,11 +42,15 @@ def generate_features(df):
 
     """
     months = df["Month"]
+    days = df["Day"]
 
-    one_hot_months = cast_to_one_hot(months)
+    one_hot_months = cast_to_one_hot(months, n_classes=12)
+    days = cast_to_one_hot(days, n_classes=31)
     one_hot_months = pd.DataFrame(one_hot_months)
+    days = pd.DataFrame(days)
 
     df = pd.merge(left=df, right=one_hot_months, left_index=True, right_index=True)
+    df = pd.merge(left=df, right=days, left_index=True, right_index=True)
 
     y = df['Max Load']
 
@@ -55,6 +59,7 @@ def generate_features(df):
     temperature = pd.DataFrame(temperature)
 
     df = pd.merge(left=df, right=temperature, left_index=True, right_index=True)
+
     drop_columns = ["ID", "Month", "Day", "Year", "Max Load", "Temp"]
 
     df.drop(drop_columns, axis=1, inplace=True)
@@ -67,12 +72,12 @@ def normalization(data):
     return (data - np.mean(data)) / np.max(np.abs(data))
 
 
-def cast_to_one_hot(data):
+def cast_to_one_hot(data, n_classes):
     """
     cast the classifier data to one hot
 
     """
-    one_hot_months = np.eye(N=12)[[data - 1]]
+    one_hot_months = np.eye(N=n_classes)[[data - 1]]
     return one_hot_months
 
 
@@ -104,6 +109,6 @@ if __name__ == '__main__':
 
     show_month_temperature_load_image(df)
 
-    train_x, train_y, test_x, test_y = load_eunite_data()
+    x, y  = load_eunite_data()
 
-    print(train_y.values, train_x.values)
+    print(x.shape)
