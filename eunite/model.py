@@ -35,8 +35,6 @@ def analysis_result():
     print("example_number =%s, mean mae percent= %s" % (test_x.shape[0], mae_percent))
 
 
-
-
 if __name__ == '__main__':
     analysis_result()
 
