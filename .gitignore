@@ -4,3 +4,4 @@ manual_cnn/test.py
 *.pyc
 *.v2
 *.trace
+*.profile-empty
